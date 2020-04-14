@@ -45,8 +45,8 @@ int jniRegisterNativeMethods(JNIEnv* env,const char* className,
 
 // 其中`JNINativeMethod`用来保存java和native的函数关系：
 typedef struct {  
-    const char* name;      // Java中函数的名字
-    const char* signature; // Java中函数的签名
+    const char* name;      // Java中函数的名字(不用携带包路径)
+    const char* signature; // Java中函数的签名(格式采用jni类型)
     void* fnPtr;           // 指向native函数的函数指针
 } JNINativeMethod;
 ```
