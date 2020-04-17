@@ -154,6 +154,7 @@ ARM指令的基本格式为：`<opcode>{mode}{type}{<cond>}{S} {Rd{!}} {,...}`
 访问：
 
 + `PUSH/POP{cond} reglist`：将寄存器列表内容推入满递减栈/从满递减栈弹出数据到寄存器列表
++ `ADR{cond} Rd,label`：小范围的地址读取伪指令，它将基于PC相对偏移的地址值读取到寄存器中
 + `LDR{type}{cond} Rd,{Rd2,}label`：从label指向的内存中加载数据到Rd中。翻译为load to register
 + `LDM{mode}{cond} Rn{!} reglist`：从指定的存储单元加载多个数据到寄存器列表。翻译为load to multi register
 + `STR{type}{cond} Rd,{Rd2,}label`：将Rd的数据写入到label指向的内存中。翻译为store from register
@@ -161,25 +162,37 @@ ARM指令的基本格式为：`<opcode>{mode}{type}{<cond>}{S} {Rd{!}} {,...}`
 
 运算：
 
-+ CMP|CMN{cond} Rn,operand2：比较指令。将Rn值减去/加上op2的值，不保存结果，仅根据比较结果设置标志位
++ `CMP|CMN{cond} Rn,operand2`：将Rn值减去/加上op2的值，不保存结果，仅根据比较结果设置标志位
 
-+ TEQ|TST{cond} Rn,operand2：比较指令。将Rn值与op2的值进行异或/与，不保存结果，仅根据比较结果设置标志位
++ `TEQ|TST{cond} Rn,operand2`：将Rn值与op2的值进行异或/与，不保存结果，仅根据比较结果设置标志位
 
-+ MOV{cond}{S} Rd,operand2：将8位的立即数或寄存器内容传给目标寄存器Rd。MVN(mov not)为按mov操作完后目标寄存器数据接着按位取反
++ `MOV{cond}{S} Rd,operand2`：将8位的立即数或寄存器内容传给目标寄存器Rd
 
-+ ADD{cond}{S} Rd,Rn,operand2：将寄存器Rn的数值加上ope2的值传给目标寄存器Rd。ADC(add cflag)为按add操作后再加上CPSR中C位的数值到目标寄存器
+  `MVN`：mov not，为按mov操作完后目标寄存器数据接着按位取反
 
-+ SUB{cond}{S} Rd,Rn,operand2：将寄存器Rn的数值减去ope2的值传给目标寄存器Rd。SBC(sub cflag)为按sub操作后再减去CPSR中C位的数值到目标寄存器
++ `ADD{cond}{S} Rd,Rn,operand2`：将寄存器Rn的数值加上ope2的值传给目标寄存器Rd。
 
-  RSB{cond}{S} Rd,Rn,operand2：Reversal SUB，将ope2的值减去寄存器Rn的数值传给目标寄存器Rd，为SUB的逆向减法指令。RSC(sub cflag)为按rsb操作后再减去CPSR中C位的数值到目标寄存器
+  `ADC{cond}{S} Rd,Rn,operand2`：add cflag，为按add操作后再加上CPSR中C位的数值到目标寄存器
 
-+ {S|U}MUL{L|D}{cond}{S} Rd,{Rd1,}Rm,Rn：将寄存器Rm的值与寄存器Rn的值相乘后传给目标寄存器Rd。{S|U}MLA{L|D}(mul add ra)为按mul操作后再加上Ra寄存器的值的低32位到目标寄存器。{S|U}MLS{L|D}(mul sub ra)为按mul操作后再减去Ra寄存器的值的低32位到目标寄存器。
++ `SUB{cond}{S} Rd,Rn,operand2`：将寄存器Rn的数值减去ope2的值传给目标寄存器Rd。
 
-+ {S|U}DIV{cond} Rd,Rm,Rn：有\无符号除法指令
+  `SBC{cond}{S} Rd,Rn,operand2`：sub cflag，按sub操作后再减去CPSR中C位的数值到目标寄存器
 
-+ LSL|LSR|ROL|ROR{cond}{S} Rd,Rn,operand2：逻辑左右移/循环左右移
+  `RSB...`：reversal sub，将ope2的值减去寄存器Rn的数值传给目标寄存器Rd
 
-+ AND|ORR|EOR{cond}{S} Rd,Rn,operand2：逻辑与|或|异或。其中AND还有一种演变形式BIC位清除指令
+  `RSC...`：reversal sub cflag，按rsb操作后再减去CPSR中C位的数值到目标寄存器
+
++ `{S|U}MUL{L|D}{cond}{S} Rd,{Rd1,}Rm,Rn`：将寄存器Rm的值与寄存器Rn的值相乘后传给目标寄存器Rd
+
+  `{S|U}MLA{L|D}...`：mul add ra，按mul操作后再加上Ra寄存器的值的低32位到目标寄存器
+
+  `{S|U}MLS{L|D}...`：mul sub ra，按mul操作后再减去Ra寄存器的值的低32位到目标寄存器
+
++ `{S|U}DIV{cond} Rd,Rm,Rn`：有\无符号除法指令
+
++ `LSL|LSR|ROL|ROR{cond}{S} Rd,Rn,operand2`：逻辑左右移/循环左右移
+
++ `AND|ORR|EOR{cond}{S} Rd,Rn,operand2`：逻辑与|或|异或。其中AND还有一种演变形式BIC位清除指令
 
 跳转：
 
@@ -205,7 +218,7 @@ ARM指令的基本格式为：`<opcode>{mode}{type}{<cond>}{S} {Rd{!}} {,...}`
   .align 2                   @对齐方式，数值为2的次数方
   .ascii "Hello ARM!\000"    @声明字符串
   .global main               @声明全局符号
-  .type main,%function       @指定符号类型
+  .type main,%function       @指定符号类型，也可通过.long等缩减形式
 main:
   @ args = 0,pretend = 0,frame = 8
   @ frame_needed = 1,uses_anpnymous_args = 0
