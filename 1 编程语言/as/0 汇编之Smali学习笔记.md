@@ -99,9 +99,8 @@ leng：表示来源数据的地址长度，或来源寄存器的寻址范围
 
   `filled-new-array-range {vx..vy},类型：根据类型新建一个寄存器长度的数组，寄存器存储对应位置元素`
 
-赋值：
+访问：
 
-+ `move[-type]/[leng] vx,vy`：将寄存器vy的内容赋值给寄存器vx。注意的是形式还有`move-result[tag] vx`
 + `xput[-type] vx,[vy],id(字段ID|索引)`：将vx的值作为tag型写入到vy指向实例的id中。静态字段没有vy，数组中vz为索引，x可选有s\i\a(静态实例、动态实例、数组)
 + `xget[-type] vx,[vy],id(字段ID|索引)`：将位于vy指向实例的id的内容作为tag型读取到vx中。静态字段没有vy，数组中vz为索引，x可选有s\i\a(静态实例、动态实例、数组)
 
@@ -109,7 +108,7 @@ leng：表示来源数据的地址长度，或来源寄存器的寻址范围
 
 + `cmp[l|g][-long|double] vx,vy,vz`：比较vy和vz的值，并在vx存入int型返回值(根据[l|g]进行规则返回)
 + `instance-of vx,vy,类型`：检查寄存器vy中的对象引用是否是类型对应的实例，是vx存入非0值，否则vx存入0
-+ `[type1-]to[-type2] vx,vy`：转换vy寄存器中的tag1型值为tag2型值存入vx
++ `move[-type]/[leng] vx,vy`：将寄存器vy的内容赋值给寄存器vx。注意的是形式还有`move-result[tag] vx`
 + `add[-type]/[leng] vx,vy,vz`：计算`vy+vz`并将结果作为tag型存入vx
 + `sub[-type]/[leng] vx,vy,vz`：计算`vy-vz`并将结果作为tag型存入vx
 + `mul[-type]/[leng] vx,vy,vz`：计算`vy*vz`并将结果作为tag型存入vx
@@ -128,7 +127,7 @@ leng：表示来源数据的地址长度，或来源寄存器的寻址范围
 + `sparse-switch vx,查询表目标`：vx存储的是要查找具体case的值。查找时通过vx比较表case的数值得到target，进而确定执行代码地址。查询表case常量是不连续(一般用于枚举定义)
 + `if[opt] vx,vy,目标`：如果vx和vy符合opt定义，则跳转到目标。vx和vy是int型值
 
-方法：
+跳转：
 
 + `invoke-[opt]/[range] {参数},方法名`：调用方法。opt有interface\super\direct\virtual\static等
 + `execute-inline {参数},内联ID`：根据内联ID执行内联方法

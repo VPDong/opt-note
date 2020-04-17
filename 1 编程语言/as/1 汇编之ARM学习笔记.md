@@ -38,9 +38,9 @@ ARM处理器在Thumb和ARM两种工作状态中随意切换。运行于Thumb状�
 
 ARM微处理器共有37个32位寄存器(其中31个为通用寄存器，6个为状态寄存器)，但是这些寄存器不能被同时访问，具体哪些寄存器是可以访问的，取决ARM处理器具体的运行模式和工作状态。**但在任何时候，通用寄存器R0~R14、程序计数器PC、一个状态寄存器CPSR都是可访问的**。
 
-+ 未分组寄存器：R0-R7是不分组寄存器。这意味着在所有处理器模式下，访问的都是同一个物理寄存器。不分组寄存器没有被系统用于特别的用途，任何可采用通用寄存器的应用场合都可以使用未分组寄存器。
++ 未分组寄存器：R0-R7是不分组寄存器。这意味着在所有处理器模式下，访问的都是同一个物理寄存器。不分组寄存器没有被系统用于特别的用途，任何可采用通用寄存器的应用场合都可以使用未分组寄存器。ARM汇编中规定：R0寄存器用来存放函数调用的返回值；且R0-R3这4个寄存器用来传递函数的第1到第4个参数，超出的通过堆栈来传递
 
-+ 已分组寄存器：R8-R14是已分组寄存器。**首先了解一个概念：每个函数所使用的栈空间是一个栈帧**。R11用作(栈)帧指针FP，指向当前函数栈帧的栈底；R12用作内部调用指针IP，暂时当作通用寄存器；R13用作栈指针SP，指向当前函数栈帧的栈顶；R14用作链接寄存器LP，指向函数的返回地址；R15被用作程序计数器PC，指向当前正在执行的指令的地址+8(因为在取地址和执行之间多了一个译码的阶段)。
++ 已分组寄存器：R8-R14是已分组寄存器。**首先了解一个概念：每个函数所使用的栈空间是一个栈帧**。R11用作(栈)帧指针FP，指向当前函数栈帧的栈底；R12用作内部指针IP，是一个临时寄存器；R13用作栈指针SP，指向当前函数栈帧的栈顶；R14用作链接寄存器LP，指向函数的返回地址；R15被用作程序计数器PC，指向当前正在执行的指令的地址+8(因为在取地址和执行之间多了一个译码的阶段)。
 
   下面以一个例子图进行理解：栈的方向为向下增长，栈底在高地址而栈顶在低地址。fp、sp、lr、pc这四个寄存器是非常特殊的寄存器，它们记录了当前正在运行的函数一些重要信息。main stack frame为先前调用函数的栈帧，func1 stack frame为当前函数的栈帧。**在刚进入一个新的函数开始执行的时候，需要将上个函数入栈保存起来！参数入栈顺序是从右到左依次入栈，而参数的出栈顺序则是从左到右的出栈。**
 
@@ -96,15 +96,34 @@ ARM微处理器共有37个32位寄存器(其中31个为通用寄存器，6个为
 
 ### 4.1 指令格式
 
-ARM指令的基本格式为：`<opcode>{<cond>}{S}{.W\.N} {Rd},{Rn}{,<operand2>}`
+ARM指令的基本格式为：`<opcode>{mode}{type}{<cond>}{S} {Rd{!}} {,...}`
 
 + opcode为指令助记符，如MOV等，这也是理解记忆的重点
-+ cond为执行条件，取值见下图。正常来说，只要相对理解指令即可，不用强记条件
++ mode为执行模式，用于执行前后地址的处理
++ type为数据类型，用于标注操作的数据长度
++ cond为条件判断，用于决定是否执行指令
 + S为指令是否影响CPSR的值，如ADDS\SUBS等指令会影响
-+ .W\\.N为指令宽度说明符号，暂时忽略
-+ 剩下的为寄存器和操作数
++ 感叹号!代表操作完的最终地址要写回到叹号附带的寄存器中，如LDM指令
 
 ```txt
+// 常见的mode
+  mode     含 义
+  DB    decrease before，基址寄存器(不允许是R15)在执行指令之前减少
+  DA    decrease after，基址寄存器(不允许是R15)在执行指令之后减少
+  IB    increase before，基址寄存器(不允许是R15)在执行指令之前增加
+  IA    increase after，基址寄存器(不允许是R15)在执行指令之后增加
+  FD    full decrease，满递减堆栈，堆栈向低地址生长，SP指向最后一个入栈的有效数据项
+  FA    full increase，满递增堆栈，堆栈向高地址生长，SP指向下一个要放入的空地址
+
+// 常见的type
+  type     含 义
+   D       双字节
+   B    无符号单字节
+  SB    有符号单字节
+   H    无符号半个字
+  SH    有符号半个字
+
+// 常见的cond
   条件码 助记符后缀        标 志                 含 义
   0000    EQ            Z置位                 相等
   0001    NE            Z清零                 不相等
@@ -130,13 +149,41 @@ ARM指令的基本格式为：`<opcode>{<cond>}{S}{.W\.N} {Rd},{Rn}{,<operand2>}
   1111    NV            忽略
 ```
 
-
-
 ### 4.2 指令内容
+
+访问：
+
++ `PUSH/POP{cond} reglist`：将寄存器列表内容推入满递减栈/从满递减栈弹出数据到寄存器列表
++ `LDR{type}{cond} Rd,{Rd2,}label`：从label指向的内存中加载数据到Rd中。翻译为load to register
++ `LDM{mode}{cond} Rn{!} reglist`：从指定的存储单元加载多个数据到寄存器列表。翻译为load to multi register
++ `STR{type}{cond} Rd,{Rd2,}label`：将Rd的数据写入到label指向的内存中。翻译为store from register
++ `STM{mode}{cond} Rn{!} reglist`：将寄存器列表数据写入到指定的存储单元中。翻译为store from multi register
+
+运算：
+
++ CMP|CMN{cond} Rn,operand2：比较指令。将Rn值减去/加上op2的值，不保存结果，仅根据比较结果设置标志位
+
++ TEQ|TST{cond} Rn,operand2：比较指令。将Rn值与op2的值进行异或/与，不保存结果，仅根据比较结果设置标志位
+
++ MOV{cond}{S} Rd,operand2：将8位的立即数或寄存器内容传给目标寄存器Rd。MVN(mov not)为按mov操作完后目标寄存器数据接着按位取反
+
++ ADD{cond}{S} Rd,Rn,operand2：将寄存器Rn的数值加上ope2的值传给目标寄存器Rd。ADC(add cflag)为按add操作后再加上CPSR中C位的数值到目标寄存器
+
++ SUB{cond}{S} Rd,Rn,operand2：将寄存器Rn的数值减去ope2的值传给目标寄存器Rd。SBC(sub cflag)为按sub操作后再减去CPSR中C位的数值到目标寄存器
+
+  RSB{cond}{S} Rd,Rn,operand2：Reversal SUB，将ope2的值减去寄存器Rn的数值传给目标寄存器Rd，为SUB的逆向减法指令。RSC(sub cflag)为按rsb操作后再减去CPSR中C位的数值到目标寄存器
+
++ {S|U}MUL{L|D}{cond}{S} Rd,{Rd1,}Rm,Rn：将寄存器Rm的值与寄存器Rn的值相乘后传给目标寄存器Rd。{S|U}MLA{L|D}(mul add ra)为按mul操作后再加上Ra寄存器的值的低32位到目标寄存器。{S|U}MLS{L|D}(mul sub ra)为按mul操作后再减去Ra寄存器的值的低32位到目标寄存器。
+
++ {S|U}DIV{cond} Rd,Rm,Rn：有\无符号除法指令
+
++ LSL|LSR|ROL|ROR{cond}{S} Rd,Rn,operand2：逻辑左右移/循环左右移
+
++ AND|ORR|EOR{cond}{S} Rd,Rn,operand2：逻辑与|或|异或。其中AND还有一种演变形式BIC位清除指令
 
 跳转：
 
-
++ `B{L}{cond} label`：如果条件满足cond，跳转到寻址到label处运行。带L的话：先将寄存器PC赋值到LP，然后跳转到寻址到label处运行(多用于调用子程序)。翻译为break
 
 
 
@@ -146,5 +193,44 @@ ARM指令的基本格式为：`<opcode>{<cond>}{S}{.W\.N} {Rd},{Rn}{,<operand2>}
 
 ## 五、文件结构
 
+```
+  .section .rodata
+  .align 2
+  .arch armv7-a              @处理器架构
+  .fpu softvfp               @协处理器类型
+  .eabi_attribute 30,6       @接口属性
+  .file "hello.c"            @源文件名称
+.LC0:
+  .text                      @段定义，也可用.section定义等
+  .align 2                   @对齐方式，数值为2的次数方
+  .ascii "Hello ARM!\000"    @声明字符串
+  .global main               @声明全局符号
+  .type main,%function       @指定符号类型
+main:
+  @ args = 0,pretend = 0,frame = 8
+  @ frame_needed = 1,uses_anpnymous_args = 0
+  stmfd sp!,(fp,lr)
+  add fp,sp,#4
+  ...
+.LPIC0:
+  add r3,px,r3
+  ...
+.L4:
+  .align 2
+.L3:
+  .section .note.GNU-satck,"",%progbits @定义.note.GNU-satck段，作用是禁止生成可执行堆栈
+  .word .LC0-(.LPIC0+8)     @用来存放地址值
+  .size main, .-main        @用来设定符号的大小
+  .ident "GCC (GNU) 4.4.3"  @编译器标识符，无实际用途
+```
 
+ARM汇编中声明函数的方法如下：
 
+```
+  .global 函数名
+  .type 函数名,%function
+函数名:
+  <...函数体...>
+```
+
+禁止生成可执行堆栈，是用来保护代码安全。可执行堆栈常常用来引发堆栈溢出之类的漏洞，关于这方面可以查阅软件漏洞研究方面的书籍。
