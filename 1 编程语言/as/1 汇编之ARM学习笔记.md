@@ -117,10 +117,10 @@ ARM指令的基本格式为：`<opcode>{<mode>}{<type>}{<cond>}{S} {Rd{!}} {,...
 
 访问：
 
-+ `STR{type}{cond} Rd,{Rd2,}label`：将Rd的数据写入到label指向的内存中。翻译为store register
-+ `STM{mode}{cond} Rn{!} reglist`：将寄存器列表数据写入到指定的存储单元中。翻译为store multi register
-+ `LDR{type}{cond} Rd,{Rd2,}label`：从label指向的内存中加载数据到Rd中。翻译为load register
-+ `LDM{mode}{cond} Rn{!} reglist`：从指定的存储单元加载多个数据到寄存器列表。翻译为load multi register
++ `STR{type}{cond} Rd,{Rd2,}label`：将Rd的数据写入到label指向的内存中。翻译为store to register
++ `STM{mode}{cond} Rn{!} reglist`：将寄存器列表数据写入到指定的存储单元中。翻译为store to multi register
++ `LDR{type}{cond} Rd,{Rd2,}label`：从label指向的内存中加载数据到Rd中。翻译为load from register
++ `LDM{mode}{cond} Rn{!} reglist`：从指定的存储单元加载多个数据到寄存器列表。翻译为load from multi register
 + `PUSH/POP{cond} reglist`：将寄存器列表内容推入满递减栈/从满递减栈弹出数据到寄存器列表
 + `ADR{cond} Rd,label`：它将基于PC相对偏移的地址值读取到寄存器中，翻译为add register
 
