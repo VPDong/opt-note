@@ -13,26 +13,26 @@ JNI开发流程主要分为以下几步：
 
 ## 二、jni注册
 
-"注册"之意就是将java层的函数和native层的函数关联起来。有了这种关联后java就可以调用native函数。这种“关联”就是jni函数的注册，方法有两种：
+"注册"之意就是将java层的函数和native层的函数关联起来。有了这种关联后java就可以调用native函数。这种“关联”就是jni函数的注册。System.loadLibrary加载so文件的机制大体如下：
+
+```
+System.loadLibrary->
+  Runtime.loadLibrary->(Java)
+    nativeLoad->(C: java_lang_Runtime.cpp)
+      Dalvik_java_lang_Runtime_nativeLoad->
+        dvmLoadNativeCode-> (dalvik/vm/Native.cpp)
+          1) dlopen(pathName, RTLD_LAZY)(把so文件mmap到进程空间，并把func等相关信息填充到soinfo中)
+          2) dlsym(handle, "JNI_OnLoad")
+          3) JNI_OnLoad->
+               lookupSharedLibMethod(method)(根据signature在所有已经打开的.so中寻找此函数实现)
+               dvmUseJNIBridge((Method*) method, fnPtr)
+               ...
+          4) ...
+```
+
+因此注册方法有两种，一种是在JNI_OnLoad时调用函数动态注册，一种是按照签名格式自动注册：
 
 ### 2.1 动态注册
-
-如果so文件已经定义JNI_OnLoad函数，就会运行通过JNI_OnLoad函数：
-
-```cpp
-# include <JNIHelp.h>// 它内部已经包含了jni.h的头文件
-
-static JNINativeMethod[] gMethods = {...};
-jnt JNI_OnLoad(JavaVM* vm, void* reserved){// JavaVM是虚拟机在JNI层的代表。每个Java进程只有一个实例
-    JNIEnvi* env = NULL;
-    jint result = -1;
-    ... // 这里可以做其他的操作(具体解释见下面描述)
-    if(jniRegisterNativeMethods(env,"...",gMethods,NELEN(gMethods)) < 0){
-        return result;
-    }
-    return JNI_VERSION_1_4;
-}
-```
 
 Android平台提供了一个jniRegisterNativeMethods函数来完成注册工作：
 
@@ -53,25 +53,26 @@ typedef struct {
 } JNINativeMethod;
 ```
 
-备注：System.loadLibrary调用`JNI_OnLoad`流程如下所示：
+如果so文件已经定义JNI_OnLoad函数，就会运行通过JNI_OnLoad函数：
 
-```
-System.loadLibrary->
-  Runtime.loadLibrary->(Java)
-    nativeLoad->(C: java_lang_Runtime.cpp)
-      Dalvik_java_lang_Runtime_nativeLoad->
-        dvmLoadNativeCode-> (dalvik/vm/Native.cpp)
-          1) dlopen(pathName, RTLD_LAZY)(把so文件mmap到进程空间，并把func等相关信息填充到soinfo中)
-          2) dlsym(handle, "JNI_OnLoad")
-          3) JNI_OnLoad->
-               RegisterNatives->
-                 dvmRegisterJNIMethod(ClassObject* clazz, ...)->
-                   dvmUseJNIBridge(method, fnPtr)->  (method->nativeFunc = func)
+```cpp
+# include <JNIHelp.h>// 它内部已经包含了jni.h的头文件
+
+static JNINativeMethod[] gMethods = {...};// 定义注册的函数
+jnt JNI_OnLoad(JavaVM* vm, void* reserved){// JavaVM是虚拟机在JNI层的代表。每个Java进程只有一个实例
+    JNIEnvi* env = NULL;
+    jint result = -1;
+    ... // 这里可以做其他的操作(具体解释见下面描述)
+    if(jniRegisterNativeMethods(env,"...",gMethods,NELEN(gMethods)) < 0){
+        return result;
+    }
+    return JNI_VERSION_1_4;
+}
 ```
 
 ### 2.2 静态注册
 
-如果so文件没有定义JNI_OnLoad函数，则直到需要调用的这下函数时，dvm才调用dvmResolveNativeMethod进行动态解析。这种方法是根据函数名来查找对应的jni函数：
+如果so文件没有定义JNI_OnLoad函数，则直到需要调用的这下函数时，dvm调用dvmResolveNativeMethod进行动态解析。这种方法是根据函数名来查找对应的jni函数：
 
 ```java
 // java代码
@@ -95,19 +96,7 @@ JNIEXPORT void JNICALL Java_com_android_test_JNIJavaTest_func(JNIEnv*,jobject,js
 #endif
 ```
 
-从上述流程可以看出，静态注册要求jni函数的名字必须遵循特定的格式`JNIEXPORT <return-type> JNICALL Java_<pkg>_<classname>_<funcname>(JNIEnvi*,...)`。它的缺点显而易见是格式非常繁琐且容易出错。可见不如动态注册方便。
-
-备注：函数dvmResolveNativeMethod(dalvik/vm/Native.cpp)来进行解析的执行流程如下所示：
-
-```
-void dvmResolveNativeMethod(const u4* args, ...)  --> (Resolve a native method and invoke it.)
-  1) void* func = lookupSharedLibMethod(method)(根据signature在所有已经打开的.so中寻找此函数实现)
-       dvmHashForeach(gDvm.nativeLibs, findMethodInLib,(void*) method)->
-         findMethodInLib(void* vlib, void* vmethod)->
-           dlsym(pLib->handle, mangleCM)
-  2) dvmUseJNIBridge((Method*) method, func);
-  3) (*method->nativeFunc)(args, pResult, method, self);(调用执行)
-```
+从上述流程可以看出，静态注册要求jni函数的名字必须遵循特定的格式`JNIEXPORT <return-type> JNICALL Java_<pkg>_<classname>_<funcname>(JNIEnvi*,...)`
 
 
 
