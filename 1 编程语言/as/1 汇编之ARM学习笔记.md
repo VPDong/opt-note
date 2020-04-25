@@ -160,6 +160,44 @@ ARM指令的基本格式为：`<opcode>{<mode>}{<type>}{<cond>}{S} {Rd{!}} {,...
 
 学习完具体指令后需要熟悉语句的特点，便于快速整理出伪代码。*关于各种语句的特点，去参考《Android软件安全与逆向分析》第七章第4小节。*
 
+```mermaid
+graph TB;
+  subgraph switch;
+  logics[logic] --> conds[cond];
+  conds[cond] --> case1.cond+body;
+  case1.cond+body --> mores[more];
+  conds[cond] --> case2.cond+body;
+  case2.cond+body --> mores[more];
+  conds[cond] --> case3.cond+body;
+  case3.cond+body --> mores[more];
+  end;
+  
+  subgraph ifelse;
+  logici[logic] --> condi[cond];
+  condi[cond] --> if.body;
+  if.body --> morei[more];
+  condi[cond] --> else.body;
+  else.body --> morei[more];
+  end;
+```
+
+```mermaid
+graph TB;
+  subgraph dowhile;
+  logicd[logic] --> dw.body-cond;
+  dw.body-cond --> dw.body-cond;
+  dw.body-cond --> mored[more];
+  end;
+  
+  subgraph whiledo;
+  logicw[logic] --> wd.cond+body;
+  wd.cond+body --> wd.cond+body;
+  wd.cond+body --> morew[more];
+  end;
+```
+
+
+
 
 
 ## 四、文件结构
