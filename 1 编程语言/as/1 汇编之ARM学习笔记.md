@@ -48,15 +48,15 @@ ARM处理器在Thumb和ARM两种工作状态中随意切换。运行于Thumb状�
 
 + **堆栈寻址**：
 
-  如`LDMFD SP!,{R1-R7,LR}`将LR和R7-R1的数据入栈，多用于保存子程序"现场"
+  如`STMFD SP!,{R1-R7,LR}`将LR和R7-R1的数据入栈，多用于保存子程序"现场"
 
-  如`STMFD SP!,{R1-R7,LR}`将数据出栈到R1-R7以及LR，多用于恢复子程序"现场"
+  如`LDMFD SP!,{R1-R7,LR}`将数据出栈到R1-R7以及LR，多用于恢复子程序"现场"
 
 + **存储寻址**
 
-  如`LDMIA R0!,{R1-R3}`将R1-R3的数据存储到寄存器R0指向的内存单元
+  如`STMIA R0!,{R1-R3}`将R1-R3的数据存储到寄存器R0指向的内存单元
 
-  如`STMIA R0!,{R1-R3}`将R0指向的存储单元的3个字加载到R1-R3寄存器中
+  如`LDMIA R0!,{R1-R3}`将R0指向的存储单元的3个字加载到R1-R3寄存器中
 
 
 
@@ -118,9 +118,9 @@ ARM指令的基本格式为：`<opcode>{<mode>}{<type>}{<cond>}{S} {Rd{!}} {,...
 访问：
 
 + `LDR{type}{cond} Rd,{Rd2,}label`：从label指向的内存中加载数据到Rd中。翻译为load register
-+ `LDM{mode}{cond} Rn{!} reglist`：从指定的存储单元加载多个数据到寄存器列表。翻译为load multi register
++ `LDM{mode}{cond} Rn{!} reglist`：从指定的存储单元加载多个数据到寄存器列表(**注意与LDR的方向是相反的**)。翻译为load from multi register
 + `STR{type}{cond} Rd,{Rd2,}label`：将Rd的数据写入到label指向的内存中。翻译为store register
-+ `STM{mode}{cond} Rn{!} reglist`：将寄存器列表数据写入到指定的存储单元中。翻译为store multi register
++ `STM{mode}{cond} Rn{!} reglist`：将寄存器列表数据写入到指定的存储单元中(**注意与STR的方向是相反的**)。翻译为store from multi register
 + `PUSH/POP{cond} reglist`：将寄存器列表内容推入满递减栈/从满递减栈弹出数据到寄存器列表
 + `ADR{cond} Rd,label`：它将基于PC相对偏移的地址值读取到寄存器中，翻译为add register
 
