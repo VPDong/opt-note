@@ -1,46 +1,80 @@
-## 一、基础知识
+## 一、文件
 
-### 1.1 工作模式
+```
+.section .rodata
+  .align 2
+  .arch armv7-a              @处理器架构
+  .fpu softvfp               @协处理器类型
+  .eabi_attribute 30,6       @接口属性
+  .file "hello.c"            @源文件名称
+.LC0:
+  .section .text             @段定义，有时也会省略.section直接定义
+  .align 2                   @对齐方式，数值为2的次数方
+  .ascii "Hello ARM!\000"    @声明字符串
+  .global main               @声明全局符号
+  .type main,%function       @指定符号类型，也可通过.long等缩减形式
+main:
+  @ args = 0,pretend = 0,frame = 8
+  @ frame_needed = 1,uses_anpnymous_args = 0
+  stmfd sp!,(fp,lr)
+  add fp,sp,#4
+  ...
+.LPIC0:
+  add r3,px,r3
+  ...
+.L4:
+  .align 2
+.L3:
+  .section .note.GNU-satck,"",%progbits @定义.note.GNU-satck段，作用是禁止生成可执行堆栈
+  .word .LC0-(.LPIC0+8)     @用来存放地址值
+  .size main, .-main        @用来设定符号的大小,其中的点号代表从当前指令的地址算起
+  .ident "GCC (GNU) 4.4.3"  @编译器标识符，无实际用途
+```
 
-ARM处理器支持用户模式和特权模式，具体有以下运行模式：
+ARM汇编中基本结构如下：
 
-+ 用户模式(usr)：正常的程序执行状态(因此只学习该模式下指令)。*只能访问常规寄存器*
-+ 系统模式(sys)：运行具有特权的操作系统任务。*只能访问常规寄存器*
-+ 管理模式(svc)：操作系统使用的保护模式
-+ 中断模式(irq\fiq)：用于通用的中断处理\用于高速数据传输或通道处理
-+ 终止模式(abt\und)：用于虚拟存储及存储保护\当未定义的指令执行时进入该模式
+```
+.label:
+  .section xxx
+  .align 大小
+  .global gvar(一般是函数名称)
+  .type gvar,%类型(function)
+  .size gvar, .label(点号代表从当前指令的地址算起)
+gvar(一般是函数名称):
+  <...函数体...>
+```
 
-### 1.2 寄存器
+禁止生成可执行堆栈，是用来保护代码安全。可执行堆栈常常用来引发堆栈溢出之类的漏洞，关于这方面可以查阅软件漏洞研究方面的书籍。
 
-ARM处理器在Thumb和ARM两种工作状态中随意切换。运行于Thumb状态时，执行的的16位字对齐的指令；运行于ARM状态时，执行的的32位字对齐的指令。在任何时候，通用寄存器R0~R14、程序计数器PC、一个状态寄存器CPSR都是可访问的。
+
+
+## 二、基础
+
+### 3.1 寄存器
+
+ARM处理器在Thumb和ARM两种工作状态中随意切换。运行于Thumb状态时，执行的16位字对齐指令；运行于ARM状态时，执行的32位字对齐指令。在任何时候，通用寄存器R0~R14、程序计数器PC、一个状态寄存器CPSR都是可访问的。
 
 + 未分组寄存器：R0-R7是不分组寄存器。这意味着在所有处理器模式下，访问的都是同一个物理寄存器。R0-R3这4个寄存器用来传递函数的第1到第4个参数，超出的通过堆栈来传递；且R0寄存器通常用来存放函数调用的返回值
 
-+ 已分组寄存器：R8-R14是已分组寄存器。**首先了解一个概念：每个函数所使用的栈空间是一个栈帧**。R11用作(栈)帧指针FP，指向当前函数栈帧的栈尾；R12用作内部指针IP，是一个指令寄存器，用作临时指向；R13用作栈指针SP，指向当前函数栈帧的栈头；R14用作链接寄存器LP，指向函数的返回地址；R15被用作程序计数器PC，指向当前正在执行的指令的地址+8(因为在取地址和执行之间多了一个译码的阶段)。
-
-  下面以一个例子图进行理解：栈的方向为向下增长，栈底在高地址而栈顶在低地址。fp、sp、lr、pc这四个寄存器是非常特殊的寄存器，它们记录了当前正在运行的函数一些重要信息。main stack frame为先前调用函数的栈帧，func1 stack frame为当前函数的栈帧。**在刚进入一个新的函数开始执行的时候，需要将上个函数入栈保存起来！参数入栈顺序是从右到左依次入栈(即使寄存器列表也是如此)，而参数的出栈顺序则是从左到右的出栈。**
-
-  ![](https://img-blog.csdn.net/20160817105557618?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
++ 已分组寄存器：R8-R15是已分组寄存器。**首先了解个概念：每个函数所使用的栈空间是一个栈帧**。R11用作(栈)帧指针FP，指向当前函数栈帧的栈尾；R12用作内部指针IP，是一个指令寄存器，用作临时指向；R13用作栈指针SP，指向当前函数栈帧的栈头；R14用作链接寄存器LP，指向函数的返回地址；R15被用作程序计数器PC，指向当前正在执行的指令的地址+8(因为在取地址和执行之间多了一个译码的阶段)。
 
 + 状态寄存器：CPSR包含条件码标志、中断禁止位、当前处理器模式以及其他状态和控制信息，主要用于运行模式、运算指令的信息记录等。
 
   ![](https://img-blog.csdn.net/20161028225855208)
 
+### 3.2 寻址
 
-
-## 二、寻址方式
-
-### 2.1 直接寻址
+#### 直接寻址
 
 如`MOV R0,#0x12`将十六进制0x12数值赋值给R0
 
 如`MOV R0,R1,LSL #2`将寄存器R1的数值左移2位后的数值赋值给R0
 
-### 2.2 间接寻址
+#### 间接寻址
 
 如`LDR R0,[R1,#-4]`将寄存器R1的数值减去4作为地址，取该地址存储单元的数值赋值给R0
 
-### 2.3 特别寻址
+#### 特别寻址
 
 + **相对寻址**：
 
@@ -60,9 +94,9 @@ ARM处理器在Thumb和ARM两种工作状态中随意切换。运行于Thumb状�
 
 
 
-## 三、语法结构
+## 三、语法
 
-### 3.1 指令格式
+### 3.1 格式
 
 ARM指令的基本格式为：`<opcode>{<mode>}{<type>}{<cond>}{S} {Rd{!}} {,...}`
 
@@ -113,14 +147,14 @@ ARM指令的基本格式为：`<opcode>{<mode>}{<type>}{<cond>}{S} {Rd{!}} {,...
   1111    NV            忽略
 ```
 
-### 3.2 指令内容
+### 3.2 指令
 
 访问：
 
 + `LDR{type}{cond} Rd,{Rd2,}label`：从label指向的内存中加载数据到Rd中。翻译为load register
-+ `LDM{mode}{cond} Rn{!} reglist`：从指定的存储单元加载多个数据到寄存器列表(**注意与LDR的方向是相反的**)。翻译为load from multi register
++ `LDM{mode}{cond} Rn{!} reglist`：从指定的存储单元加载多个数据到寄存器列表(**注意与LDR的方向是相反的**)。翻译为load from multi
 + `STR{type}{cond} Rd,{Rd2,}label`：将Rd的数据写入到label指向的内存中。翻译为store register
-+ `STM{mode}{cond} Rn{!} reglist`：将寄存器列表数据写入到指定的存储单元中(**注意与STR的方向是相反的**)。翻译为store from multi register
++ `STM{mode}{cond} Rn{!} reglist`：将寄存器列表数据写入到指定的存储单元中(**注意与STR的方向是相反的**)。翻译为store from multi
 + `PUSH/POP{cond} reglist`：将寄存器列表内容推入满递减栈/从满递减栈弹出数据到寄存器列表
 + `ADR{cond} Rd,label`：它将基于PC相对偏移的地址值读取到寄存器中，翻译为add register
 
@@ -157,6 +191,10 @@ ARM指令的基本格式为：`<opcode>{<mode>}{<type>}{<cond>}{S} {Rd{!}} {,...
 跳转：
 
 + `B{L}{cond} label`：如果条件满足cond，跳转到寻址到label处运行。带L的话：先将寄存器PC赋值到LP，然后跳转到寻址到label处运行(多用于调用子程序)。翻译为break
+
+
+
+## 四、语句
 
 学习完具体指令后需要熟悉语句的特点，便于快速整理出伪代码。*关于各种语句的特点，去参考《Android软件安全与逆向分析》第七章第4小节。*
 
@@ -198,53 +236,9 @@ graph TB;
 
 
 
+## 五、ELF
+
+...
 
 
-## 四、文件结构
-
-```
-  .section .rodata
-  .align 2
-  .arch armv7-a              @处理器架构
-  .fpu softvfp               @协处理器类型
-  .eabi_attribute 30,6       @接口属性
-  .file "hello.c"            @源文件名称
-.LC0:
-  .section .text             @段定义，有时也会省略.section直接定义
-  .align 2                   @对齐方式，数值为2的次数方
-  .ascii "Hello ARM!\000"    @声明字符串
-  .global main               @声明全局符号
-  .type main,%function       @指定符号类型，也可通过.long等缩减形式
-main:
-  @ args = 0,pretend = 0,frame = 8
-  @ frame_needed = 1,uses_anpnymous_args = 0
-  stmfd sp!,(fp,lr)
-  add fp,sp,#4
-  ...
-.LPIC0:
-  add r3,px,r3
-  ...
-.L4:
-  .align 2
-.L3:
-  .section .note.GNU-satck,"",%progbits @定义.note.GNU-satck段，作用是禁止生成可执行堆栈
-  .word .LC0-(.LPIC0+8)     @用来存放地址值
-  .size main, .-main        @用来设定符号的大小,其中的点号代表从当前指令的地址算起
-  .ident "GCC (GNU) 4.4.3"  @编译器标识符，无实际用途
-```
-
-ARM汇编中基本结构如下：
-
-```
-.label:
-  .section xxx
-  .align 大小
-  .global gvar(一般是函数名称)
-  .type gvar,%类型(function)
-  .size gvar, .label(点号代表从当前指令的地址算起)
-gvar(一般是函数名称):
-  <...函数体...>
-```
-
-禁止生成可执行堆栈，是用来保护代码安全。可执行堆栈常常用来引发堆栈溢出之类的漏洞，关于这方面可以查阅软件漏洞研究方面的书籍。
 
