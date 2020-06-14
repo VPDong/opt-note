@@ -20,6 +20,10 @@ participant 恶意服务器
 正常服务器-->正常服务器:执行恶意脚本发出的请求(如转账等)
 ```
 
+原理：SOP可以通过html tag加载资源，且SOP不阻止接口请求而是拦截请求结果，CSRF恰恰占了这两个便宜。所以 SOP不能作为防范CSRF的方法。
+
+虽然同源策略会阻止响应，但依然会发出请求。因为执行响应拦截的是浏览器而不是后端程序。事实上请求已经发到服务器并返回了结果，但是迫于安全策略，浏览器不允许你继续进行 js 操作，所以报出你熟悉的 `blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.`，但是请求已经发到服务器并被处理了。**所以再强调一次，同源策略不能作为防范 CSRF 的方法**。
+
 + 受害者Bob在银行有一笔存款，通过对银行的网站发送请求`http://bank.example/withdraw?account=bob&amount=1000000&for=bob2`可以使Bob把1000000的存款转到bob2的账号下。通常情况下，该请求发送到网站后，服务器会先验证该请求是否来自一个合法的session，并且该session的用户Bob已经成功登陆。
 + 黑客Alice自己在该银行也有账户，他知道上文中的URL可以把钱进行转帐操作。Alice可以自己发送一个请求给银行：`http://bank.example/withdraw?account=bob&amount=1000000&for=Alice`。但是这个请求来自Alice而非 Bob，他不能通过安全认证，因此该请求不会起作用。
 + 这时Alice想到使用CSRF的攻击方式，他先自己做一个网站，在网站中放入如下代码`src=”http://bank.example/withdraw?account=bob&amount=1000000&for=Alice`，并且通过广告等诱使Bob来访问他的网站。当Bob访问该网站时，上述 url就会从Bob的浏览器发向银行，而这个请求会附带Bob浏览器中的cookie一起发向银行服务器。但是如果Bob当时恰巧刚访问他的银行后不久，他的浏览器与银行网站之间的session尚未过期，这时这个url请求就会得到响应，钱将从Bob的账号转移到Alice的账号，而Bob当时毫不知情。
