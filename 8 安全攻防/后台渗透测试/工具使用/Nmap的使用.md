@@ -124,9 +124,9 @@ Nmap使用TCP/IP协议栈指纹来识别不同的操作系统和设备。在RFC�
 -D <decoy1,decoy2[,ME],...>: 用一组IP地址掩盖真实地址，其中ME填入自己的IP地址
 --spoof-mac <mac address/prefix/vendor name>: 伪装MAC地址
 --ip-options <options>: 使用指定的IP选项来发送数据包
+--ttl <val>: 设置time-to-live时间
 --data-length <num>: 填充随机数据让数据包长度达到Num
 --badsum: 使用错误的checksum来发送数据包(正常情况下，该类数据包被抛弃，如收到回复则说明回复来自防火墙或 IDS/IPS)
---ttl <val>: 设置time-to-live时间
 ```
 
 如`nmap -F -Pn -D 10.96.10.100,10.96.10.110,ME -e eth0 -g 5555 202.207.236.3`。具体用到技术如下：
