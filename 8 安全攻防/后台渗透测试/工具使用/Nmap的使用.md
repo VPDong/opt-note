@@ -1,6 +1,15 @@
 # Nmap的使用
 
-Nmap包含四项基本功能：主机发现 (Host Discovery)、端口扫描 (Port Scanning)、版本侦测 (Version Detection)、操作系统侦测 (Operating System Detection)。另外nmap还提供强大的NSE(Nmap  Scripting Language)脚本引擎功能，脚本可以对基本功能进行补充和扩展。
+Nmap包含四项基本功能：主机发现 (Host Discovery)、端口扫描 (Port Scanning)、软件版本侦测 (Version Detection)、操作系统侦测 (Operating System Detection)。另外nmap还提供NSE(Nmap  Scripting Language)脚本引擎功能，可对基本功能进行补充和扩展。另外注意：**ICMP直接封装在IP包内(网络层无端口，端口是传输层的概念)，Ping使用ICMP协议中的echo报文**。nmap中文手册见[这里](http://www.nmap.com.cn/doc/manual.shtm#1)。
+
+
+
+## 通用参数
+
+```
+-n: -n表示不进行DNS解析
+-v: 表示显示冗余信息，在扫描过程中显示扫描的细节，从而让用户了解当前的扫描状态
+```
 
 
 
@@ -9,43 +18,53 @@ Nmap包含四项基本功能：主机发现 (Host Discovery)、端口扫描 (Por
 主机发现的原理与Ping命令类似：发送探测包到目标主机，如果收到回复则说明目标主机是开启的。Nmap支持十多种不同的主机探测方式，用户可以在不同的条件下灵活选用不同的方式来探测目标机。主机发现常用参数如下：
 
 ```
--sn: Ping Scan。进行主机发现，不进行端口扫描
+-sn: not scan。进行主机发现，跳过端口扫描
 
--PO [protocollist]: 使用IP协议包探测对方主机是否开启
 -PE/PP/PM: 使用ICMP echo、ICMP time stamp、ICMP address mask请求包方式进行发现主机
--PS/PA/PU/PY [portlist]: 使用TCP SYN/ACK或SCTP INIT/ECHO请求包方式进行发现主机
+-PU/PS/PA: 使用UDP或TCP SYN/ACK请求包方式进行发现主机
 ```
 
-+ `nmap -sn <ip>`：在探测公网IP地址时，会依次发送四种不同类型的数据包(ICMP echo request、TCP SYN packet to port 443(https)、TCP ACK packet to port 80(http)、ICMP timestamp request)来探测目标主机是否在线，只要收到其中一个包的回复则说明目标机开启。使用四种不同类型的数据包可以避免因防火墙或丢包造成的判断错误；在探测内网IP地址时，会发送ARP请求包探测目标ip是否在线，如果有ARP回复包则说明在线。如果在线还可以得到其MAC地址，但是不会探测其开放的端口号。
-+ `nmap -PE <ip>`：在探测公网IP地址时，ICMP Echo扫描简单来说是通过向目标发送ICMP Echo数据包来探测目标主机是否存活，但由于许多主机的防火墙会禁止这些报文，所以仅仅ICMP扫描通常是不够的；在探测内网IP地址时，会发送ARP请求包探测目标ip是否在线，如果有ARP回复包则说明在线。如果在线还会探测主机的端口的开启状态以及运行的服务。
-+ `nmap -PP <ip>`：在探测公网IP地址时，ICMP time stamp时间戳扫描在大多数防火墙配置不当时可能会得到回复，可以此方式来判断目标主机是否存活。倘若目标主机在线，该命令还会探测其开放的端口以及运行的服务；在探测内网IP地址时，会发送ARP请求包探测目标ip是否在线，如果有ARP回复包则说明在线。如果在线还会探测主机的端口的开启状态以及运行的服务。
-+ `nmap -PM <ip>`：在探测公网IP地址时，ICMP address mask地址掩码扫描会试图用备选的ICMP等级Ping指定主机，通常有不错穿透防火墙效果；在探测内网IP地址时，会发送ARP请求包探测目标ip是否在线，如果有ARP回复包则说明在线。如果在线还会探测主机的端口的开启状态以及运行的服务。
++ `nmap -sn <ip>`：在探测公网IP地址时，会依次发送四种不同类型的数据包(ICMP echo request、TCP SYN packet to port 443(https)、TCP ACK packet to port 80(http)、ICMP timestamp request)来探测目标主机是否在线，只要收到其中一个包的回复则说明目标机开启。使用四种不同类型的数据包可以避免因防火墙或丢包造成的判断错误；在探测内网IP地址时，会发送ARP请求包探测目标ip是否在线，如果有ARP回复包则说明在线。如果在线还可以得到其MAC地址，但是不会探测其开放的端口号
++ `nmap -PE <ip>`：在探测公网IP地址时，ICMP echo扫描简单来说是通过向目标发送ICMP echo数据包来探测目标主机是否存活，但由于许多主机的防火墙会禁止这些报文，所以仅仅ICMP扫描通常是不够的；在探测内网IP地址时，会发送ARP请求包探测目标ip是否在线，如果有ARP回复包则说明在线。如果在线还会探测主机的端口的开启状态以及运行的服务
++ `nmap -PP <ip>`：在探测公网IP地址时，ICMP time stamp时间戳扫描在大多数防火墙配置不当时可能会得到回复，可以此方式来判断目标主机是否存活。倘若目标主机在线，该命令还会探测其开放的端口以及运行的服务；在探测内网IP地址时，会发送ARP请求包探测目标ip是否在线，如果有ARP回复包则说明在线。如果在线还会探测主机的端口的开启状态以及运行的服务
++ `nmap -PM <ip>`：在探测公网IP地址时，ICMP address mask地址掩码扫描会试图用备选的ICMP等级Ping指定主机，通常有不错穿透防火墙效果；在探测内网IP地址时，会发送ARP请求包探测目标ip是否在线，如果有ARP回复包则说明在线。如果在线还会探测主机的端口的开启状态以及运行的服务
 
 
 
 ## 端口扫描
 
-端口扫描是Nmap最基本最核心的功能，用于确定目标主机的TCP/UDP端口的开放情况。默认情况下Nmap会扫描1000个最有可能开放的TCP端口。Nmap通过探测将端口划分为6个状态：open、closed、filtered、unfiltered、open|filtered、closed|filtered 。端口扫描常用参数如下：
+端口扫描是Nmap最基本最核心的功能，用于确定目标主机的TCP/UDP端口的开放情况。默认情况下Nmap会扫描1000个最有可能开放的TCP端口。Nmap通过探测将端口划分为6个状态：filtered(端口被防火墙IDS/IPS屏蔽，无法确定其状态)、unfiltered(端口没有被屏蔽，但是否开放需要进一步确定)、open(端口是开放的)、closed(端口是关闭的)、open|filtered(端口是开放的或被屏蔽，Nmap不能识别)、closed|filtered(端口是关闭的或被屏蔽，Nmap不能识别) 。端口扫描常用参数如下：
 
 ```
--T4： 指定扫描过程使用的时序，总有6个级别(0-5)，级别越高扫描速度越快，但也容易被防火墙或IDS检测并屏蔽掉，在网络通讯状况较好的情况下推荐使用T4
--A ：选项用于使用进攻性方式扫描
+-Pn: not ping。指定主机地址，跳过主机发现(即直接默认主机是存活的，扫描之前不需要ping命令)
 
--p <port ranges>: 扫描指定的端口，如没指定则会按照nmap-services文件中指定的端口进行扫描。
-
--sS/sA/sT: 指定使用TCP SYN/ACK/Connect()的方式来对目标主机进行扫描
--sF/sX/sN/: 指定使用TCP FIN/Xmas/Null scans秘密扫描方式来协助探测对方的TCP端口状态
+-sO: 指定使用IP protocol扫描确定目标机支持的协议类型
 -sU: 指定使用UDP扫描方式确定目标主机的UDP端口状况
+-sN/sX: 指定使用Null/Xmas的方式来协助探测对方的TCP端口状态
+-sS/sA/sF: 指定使用TCP SYN/ACK/FIN的方式来对目标主机进行扫描
+-sT/sW/sM: 指定使用TCP Connect/Window/Maimon的方式来对目标主机进行扫描
+-sY/sZ: 指定使用SCTP INIT/COOKIE-ECHO的方式来协助探测对方的SCTP端口状况
 
--script <script name>: 指定扫描脚本
+-p <port ranges>: 扫描指定的端口，如没指定则会按照nmap-services文件中指定的端口进行扫描
+
+-F: 快速模式，仅扫描TOP 100的端口
+-A: 全量模式，在探测端口服务具体版本扫描更多的各种信息
+-T4: 指定扫描过程使用的时序。总有6个级别(0-5)，级别越高扫描速度越快，但也容易被防火墙或IDS检测并屏蔽掉，在网络通讯状况较好的情况下推荐使用T4
 ```
 
-+ 端口指定(-p) ：要既扫描TCP又扫描UDP，则需要指定-sU及至少一个TCP扫描类型(-sS或-sT等），如果没给定协议限定符，端口号会被加到所有协议列表。如-p U:53,111,137,T:21-25,80,139,8080,S:9 (其中U代表UDP协议、T代表TCP协议、S代表SCTP协议)。
-+ TCP SYN 扫描(-sS)：TCP SYN方式向目标主机的端口发送SYN包，如果收到SYN/ACK回复，则可判断端口是开放的；如果收到RST包，说明该端口是关闭的。如果没收到回复，可判断该端口被屏蔽。因该方式仅发送SYN包对目标主机的特定端口，不建立完整的TCP连接，所以相对比较隐蔽且效率高、适用范围广。**这是Nmap默认的扫描方式，通常被称作半连接扫描**。
-+ TCP ACK 扫描(-sA)：TCP ACK方式向目标主机的端口发送ACK包，如果收到RST包，则该端口没有被防火墙屏蔽；没有收到RST包，则说明被屏蔽。该方式只能用于确定防火墙是否屏蔽某个端口，可以辅助TCP SYN的方式来判断目标主机防火墙的状况。
-+ TCP connent 扫描(-sT)：TCP connect方式使用系统网络API向目标主机的端口发起连接，如无法连接，说明该端口关闭。该方式由于建立完整的TCP连接会在目标主机上留下记录信息且扫描速度比较慢，所以TCP connect是TCP SYN无法使用才考虑使用的方式。**这是Nmap补充的扫描方式，通常被称作全连接扫描**。
-+ TCP FIN/Xmas/NULL 扫描(-sF/sX/sN)：因相对比较隐蔽，这三种扫描方式被称为秘密扫描。FIN扫描向目标主机的端口发送的TCP FIN包或Xmas tree包或NULL包，如果收到对方的RST回复包，则说明该端口是关闭的；没有收到RST包，则说明该端口可能是开放或被屏蔽了。其中Xmas tree包是指flags中FIN URG PUSH被置为1的TCP包；NULL包是指所有的flags都为0的TCP包。
-+ UDP 扫描(-sU)：UDP扫描用于判断UDP端口的情况，向目标主机的UDP端口发送探测包，如果收到回复ICMP port unreachable，则说明该端口是关闭的；如没有收到回复，则说明该UDP端口可能是开放的或者屏蔽的。因此通过反向排除法的方式来判断哪些UDP端口是可能处于开放状态的。
++ 端口指定(-p) ：要既扫描TCP又扫描UDP，则需要指定-sU及至少一个TCP扫描类型(-sS或-sT等），如果没给定协议限定符，端口号会被加到所有协议列表。如-p U:53,111,137,T:21-25,80,139,8080,S:9 (其中U代表UDP协议、T代表TCP协议、S代表SCTP协议)
+
++ UDP 扫描(-sU)：UDP扫描用于判断UDP端口的情况，向目标主机的UDP端口发送探测包，如果收到回复ICMP port unreachable，则说明该端口是关闭的；如没有收到回复，则说明该UDP端口可能是开放的或者屏蔽的。因此通过反向排除法的方式来判断哪些UDP端口是可能处于开放状态的
+
++ TCP SYN扫描(-sS)：TCP SYN方式向目标主机的端口发送SYN包，如果收到SYN/ACK回复，则可判断端口是开放的；如果收到RST包，说明该端口是关闭的。如果没收到回复，可判断该端口被屏蔽。因该方式仅发送SYN包对目标主机的特定端口，不建立完整的TCP连接，所以相对比较隐蔽且效率高、适用范围广。**这是Nmap默认的扫描方式，通常被称作半连接扫描**
+
+  > TCP connent扫描(-sT)：TCP connect方式使用系统网络API向目标主机的端口发起连接，如无法连接，说明该端口关闭。该方式由于建立完整的TCP连接会在目标主机上留下记录信息且扫描速度比较慢，所以TCP connect是TCP SYN无法使用才考虑使用的方式。**这是Nmap补充的扫描方式，通常被称作全连接扫描**
+
++ TCP ACK扫描(-sA)：TCP ACK方式向目标主机的端口发送ACK包，如果收到RST包，则该端口没有被防火墙屏蔽；没有收到RST包，则说明被屏蔽。**该方式只能用于确定防火墙是否屏蔽某个端口，可以辅助TCP SYN的方式来判断目标主机防火墙的状况**
+
++ TCP FIN/Xmas/NULL 扫描(-sF/sX/sN)：因相对比较隐蔽，这三种扫描方式被称为秘密扫描。FIN扫描向目标主机的端口发送的TCP FIN包或Xmas tree包或NULL包，如果收到对方的RST回复包，则说明该端口是关闭的；没有收到RST包，则说明该端口可能是开放或被屏蔽了。其中Xmas包是指flags中FIN URG PUSH被置为1的TCP包；NULL包是指所有的flags都为0的TCP包
+
++ -A: 这个命令不仅列出目标主机开放的端口号、对应的服务，还较为详细的列出了服务的版本、其支持的命令、到达目标主机的每一跳路由等信息。在进行完全扫描时，扫描机与目标主机之间存在大量的数据流量交互，扫描时长随之增加。完全扫描不仅仅是TCP协议上的通信交互，还有例如ICMP、HTTP、NBSS、TDS、POP等等协议的交互，这些协议的交互是因为在完全扫描开始时首先对目标主机的开放端口进行了确认，之后再根据不同对应的不同服务进行服务版本信息探测、账户信息等信息的探测！
 
 
 
@@ -98,7 +117,7 @@ Nmap使用TCP/IP协议栈指纹来识别不同的操作系统和设备。在RFC�
 防火墙与IDS规避为用于绕开防火墙与IDS的检测与屏蔽，以便能够更加详细地发现目标主机的状况。nmap提供了多种规避技巧通常可以从两个方面考虑规避方式：数据包的变换(Packet Change)和时序变换(Timing Change)
 
 ```
---mtu <val>: 指定使用分片、指定数据包的MTU
+-f/--mtu <val>: 指定使用分片、指定数据包的MTU
 -g/--source-port <portnum>: 使用指定源端口
 -e <iface>: 使用特定的网络接口
 -S <IP_Address>: 伪装成其他IP地址
@@ -107,6 +126,7 @@ Nmap使用TCP/IP协议栈指纹来识别不同的操作系统和设备。在RFC�
 --ip-options <options>: 使用指定的IP选项来发送数据包
 --data-length <num>: 填充随机数据让数据包长度达到Num
 --badsum: 使用错误的checksum来发送数据包(正常情况下，该类数据包被抛弃，如收到回复则说明回复来自防火墙或 IDS/IPS)
+--ttl <val>: 设置time-to-live时间
 ```
 
 如`nmap -F -Pn -D 10.96.10.100,10.96.10.110,ME -e eth0 -g 5555 202.207.236.3`。具体用到技术如下：
@@ -139,6 +159,8 @@ NSE脚本引擎(Nmap Scripting Engine)是nmap最强大、最灵活的功能之�
 + Vuln：负责检查目标机是否有常见漏洞，如MS08-067
 
 ```
+-script <script name>: 指定扫描脚本
+
 例如：
 nmap -p 443 -script ssl-ccs-injection 192.168.10.34   #验证是否存在openssl CCS注入漏洞
 nmap --max-parallelism 800 --script http-slowloris scanme.nmap.org  #可以探测该主机是否存在http拒绝服务攻击漏洞
@@ -152,7 +174,13 @@ nmap -script http-iis-short-name-brute 192.168.10.34  #探测是否存在IIS短�
 
 
 
+## 保存输出
 
+```
+-oG test.txt: 将扫描结果生成test.txt 文件
+-oA test.xml: 将扫描结果生成test.xml 文件，中断后结果也可保存
+-oX test.xml: 将扫描结果生成test.xml 文件，如果中断则结果打不开
+```
 
 
 
