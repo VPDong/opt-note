@@ -59,7 +59,7 @@ typedef struct {
 # include <JNIHelp.h>// 它内部已经包含了jni.h的头文件
 
 static JNINativeMethod[] gMethods = {...};// 定义注册的函数
-jnt JNI_OnLoad(JavaVM* vm, void* reserved){// JavaVM是虚拟机在JNI层的代表。每个Java进程只有一个实例
+JNIEXPORT jnt JNI_OnLoad(JavaVM* vm, void* reserved){// JavaVM是虚拟机在JNI层的代表。每个Java进程只有一个实例
     JNIEnvi* env = NULL;
     jint result = -1;
     ... // 这里可以做其他的操作(具体解释见下面描述)
@@ -72,7 +72,7 @@ jnt JNI_OnLoad(JavaVM* vm, void* reserved){// JavaVM是虚拟机在JNI层的代�
 
 ### 2.2 静态注册
 
-如果so文件没有定义JNI_OnLoad函数，则直到需要调用的这下函数时，dvm调用dvmResolveNativeMethod进行动态解析。这种方法是根据函数名来查找对应的jni函数：
+如果so文件没有定义JNI_OnLoad函数，则直到需要调用的该函数时，dvm调用dvmResolveNativeMethod进行动态解析。这种方法是根据函数名来查找对应的jni函数：
 
 ```java
 // java代码
@@ -140,8 +140,8 @@ JavaVM是一个与进程相关的变量，是虚拟机在JNI层的代表(全进�
 
 参考[这里](https://wiki.jikexueyuan.com/project/jni-ndk-developer-guide/function2.html)。主要是用于c/c++进行回掉。通过理解下面的几个函数，感觉和java反射思路差不多：
 
-+ `FindClass(env,"pkg.class")`：获取类的class引用，返回jaclass类型，要判空
-+ `GetObjectClass(env,jobj) `：获取实例的class引用，返回jaclass类型，要判空
++ `FindClass(env,"pkg.class")`：获取类的class引用，返回jclass类型，要判空
++ `GetObjectClass(env,jobj) `：获取实例的class引用，返回jclass类型，要判空
 + `NewObject(env,clazz,mid,args...)`：创建对象的实例，返回jobject类型，要判空
 + `Get(Static)MethodID(env, jcla, "fnName", "fnSign");`：获取类的方法ID，返回jmethodID类型，要判空
 + `Call(Static)XXXMethod(env,jobj|jcla,mid, args...)`：调用对象的实例\父类\静态方法
