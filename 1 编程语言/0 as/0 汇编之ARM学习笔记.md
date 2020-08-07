@@ -1,5 +1,7 @@
 ## 一、文件
 
+ARM汇编中基本结构如下：
+
 ```
 .section .rodata
   .align 2
@@ -7,12 +9,27 @@
   .fpu softvfp               @协处理器类型
   .eabi_attribute 30,6       @接口属性
   .file "hello.c"            @源文件名称
+.label:
+  .section [val]             @段定义，有时也会省略.section直接定义
+  .align [val]               @对齐方式，数值为2的次数方
+  .global [val]              @声明全局符号,一般是函数名称。还有.ascii用于声明字符串
+  .type [gvar],%[val]        @指定符号类型，也可通过.long等缩减形式
+  .size [gvar], .label(点号代表从当前指令的地址算起)
+```
+
+```
+.section .rodata
+  .align 2
+  .arch armv7-a
+  .fpu softvfp
+  .eabi_attribute 30,6
+  .file "hello.c"
 .LC0:
-  .section .text             @段定义，有时也会省略.section直接定义
-  .align 2                   @对齐方式，数值为2的次数方
-  .ascii "Hello ARM!\000"    @声明字符串
-  .global main               @声明全局符号
-  .type main,%function       @指定符号类型，也可通过.long等缩减形式
+  .section .text
+  .align 2
+  .ascii "Hello ARM!\000"
+  .global main
+  .type main,%function
 main:
   @ args = 0,pretend = 0,frame = 8
   @ frame_needed = 1,uses_anpnymous_args = 0
@@ -29,19 +46,6 @@ main:
   .word .LC0-(.LPIC0+8)     @用来存放地址值
   .size main, .-main        @用来设定符号的大小,其中的点号代表从当前指令的地址算起
   .ident "GCC (GNU) 4.4.3"  @编译器标识符，无实际用途
-```
-
-ARM汇编中基本结构如下：
-
-```
-.label:
-  .section xxx
-  .align 大小
-  .global gvar(一般是函数名称)
-  .type gvar,%类型(function)
-  .size gvar, .label(点号代表从当前指令的地址算起)
-gvar(一般是函数名称):
-  <...函数体...>
 ```
 
 禁止生成可执行堆栈，是用来保护代码安全。可执行堆栈常常用来引发堆栈溢出之类的漏洞，关于这方面可以查阅软件漏洞研究方面的书籍。
@@ -68,29 +72,21 @@ ARM处理器在Thumb和ARM两种工作状态中随意切换。运行于Thumb状�
 
 如`MOV R0,#0x12`将十六进制0x12数值赋值给R0
 
-如`MOV R0,R1,LSL #2`将寄存器R1的数值左移2位后的数值赋值给R0
-
 #### 间接寻址
 
 如`LDR R0,[R1,#-4]`将寄存器R1的数值减去4作为地址，取该地址存储单元的数值赋值给R0
 
-#### 特别寻址
+如`STR R0,[R1,#-4]`将给R0的数值取出来，放到以寄存器R1的数值减去4作为地址的存储单元中
 
-+ **相对寻址**：
+如`STMIA R0!,{R1-R3}`将R1-R3的数据存储到寄存器R0指向的内存单元
 
-  如`BL NEXT`以程序计数器PC的当前数值为基地址，指令中的地址标号作为偏移量，两者相加后的数值赋值给R0
+如`LDMIA R0!,{R1-R3}`将R0指向的存储单元的3个字加载到R1-R3寄存器中
 
-+ **堆栈寻址**：
+#### 堆栈寻址
 
-  如`STMFD SP!,{R1-R7,LR}`将LR和R7-R1的数据入栈，多用于保存子程序"现场"
+如`STMFD SP!,{R1-R7,LR}`将R1-R7以及LR的数据入栈，多用于保存子程序"现场"
 
-  如`LDMFD SP!,{R1-R7,LR}`将数据出栈到R1-R7以及LR，多用于恢复子程序"现场"
-
-+ **存储寻址**
-
-  如`STMIA R0!,{R1-R3}`将R1-R3的数据存储到寄存器R0指向的内存单元
-
-  如`LDMIA R0!,{R1-R3}`将R0指向的存储单元的3个字加载到R1-R3寄存器中
+如`LDMFD SP!,{R1-R7,LR}`将数据出栈到R1-R7以及LR，多用于恢复子程序"现场"
 
 
 
@@ -98,30 +94,30 @@ ARM处理器在Thumb和ARM两种工作状态中随意切换。运行于Thumb状�
 
 ### 3.1 格式
 
-ARM指令的基本格式为：`<opcode>{<mode>}{<type>}{<cond>}{S} {Rd{!}} {,...}`
+ARM指令的基本格式为：`<op>[{<type>}{<mode>}{<cond>}{S}] {Rd{!}} {,...}`
 
-+ opcode为指令助记符，如MOV等，这也是理解记忆的重点
-+ mode为执行模式，用于执行前后地址的处理
++ op为指令助记符，如MOV等，这也是理解记忆的重点
 + type为数据类型，用于标注操作的数据长度
++ mode为执行模式，用于执行前后地址的处理
 + cond为条件判断，用于决定是否执行指令
 + **S为指令是否影响CPSR的值**，如ADDS\SUBS等指令会影响CPSR的值
 + **感叹号!代表操作完的最终地址要回写到叹号附带的寄存器中**，如LDM指令
 
 ```txt
-// 常见的mode
-  mode     含 义
-  DB    decrease before，基址寄存器(不允许是R15)在执行指令之前减少
-  DA    decrease after，基址寄存器(不允许是R15)在执行指令之后减少
-  IB    increase before，基址寄存器(不允许是R15)在执行指令之前增加
-  IA    increase after，基址寄存器(不允许是R15)在执行指令之后增加
-  FD    full del，满递减堆栈，堆栈向低地址生长，SP指向最后一个入栈的有效数据项
-  FA    full add，满递加堆栈，堆栈向高地址生长，SP指向下一个要放入的空地址
-
 // 常见的type
   type                 含 义
-   B(SB)               无(有)符号单字节
-   H(SH)               无(有)符号半个字
-   D                   双字节
+  B(SB)               无(有)符号单字节
+  H(SH)               无(有)符号半个字
+  D                   双字节
+
+// 常见的mode
+  mode     含 义
+  IA    increase after，基址寄存器(不允许是R15)在执行指令之后增加
+  IB    increase before，基址寄存器(不允许是R15)在执行指令之前增加
+  DA    decrease after，基址寄存器(不允许是R15)在执行指令之后减少
+  DB    decrease before，基址寄存器(不允许是R15)在执行指令之前减少
+  FA    full add，满递加堆栈，堆栈向高地址生长，SP指向下一个要放入的空地址
+  FD    full del，满递减堆栈，堆栈向低地址生长，SP指向最后一个入栈的有效数据项
 
 // 常见的cond
   条件码 助记符后缀        标 志                 含 义
@@ -133,10 +129,10 @@ ARM指令的基本格式为：`<opcode>{<mode>}{<type>}{<cond>}{S} {Rd{!}} {,...
   1100    GT            Z清零且N等于V           带符号数大于
   1011    LT            N不等于V               带符号数小于
   
-  0010    HS            C置位                 无符号数大于或等于(high or same)
-  1001    LS            C清零Z置位             无符号数小于或等于(low or same)
   1000    HI            C置位Z清零             无符号数大于
   0011    LO            C清零                 无符号数小于
+  0010    HS            C置位                 无符号数大于或等于(high or same)
+  1001    LS            C清零Z置位             无符号数小于或等于(low or same)
   
   0100    MI            N置位                 负数
   0101    PL            N清零                 正数或零
@@ -151,12 +147,14 @@ ARM指令的基本格式为：`<opcode>{<mode>}{<type>}{<cond>}{S} {Rd{!}} {,...
 
 访问：
 
-+ `LDR{type}{cond} Rd,{Rd2,}label`：从label指向的内存中加载数据到Rd中。翻译为load register
-+ `LDM{mode}{cond} Rn{!} reglist`：从指定的存储单元加载多个数据到寄存器列表(**注意与LDR的方向是相反的**)。翻译为load from multi
-+ `STR{type}{cond} Rd,{Rd2,}label`：将Rd的数据写入到label指向的内存中。翻译为store register
-+ `STM{mode}{cond} Rn{!} reglist`：将寄存器列表数据写入到指定的存储单元中(**注意与STR的方向是相反的**)。翻译为store from multi
-+ `PUSH/POP{cond} reglist`：将寄存器列表内容推入满递减栈/从满递减栈弹出数据到寄存器列表
++ `MOV{cond}{S} Rd,operand2`：将8位的立即数或寄存器内容传给目标寄存器Rd。`MVN...`为按mov操作完后目标寄存器数据接着按位取反，翻译为mov not
 + `ADR{cond} Rd,label`：它将基于PC相对偏移的地址值读取到寄存器中，翻译为add register
++ `LDR{type}{cond} Rd,{Rd2,}label`：从label指向的内存中加载数据到Rd中。翻译为load register
++ `STR{type}{cond} Rd,{Rd2,}label`：将Rd的数据写入到label指向的内存中。翻译为store register
++ `LDM{mode}{cond} Rn{!} reglist`：从指定的存储单元加载多个数据到寄存器列表(**注意与LDR的方向是相反的**)。翻译为load from multi
++ `STM{mode}{cond} Rn{!} reglist`：将寄存器列表数据写入到指定的存储单元中(**注意与STR的方向是相反的**)。翻译为store from multi
++ `PUSH{cond} reglist`：将寄存器列表内容推入满递减栈
++ `POP{cond} reglist`：从满递减栈弹出数据到寄存器列表
 
 运算：
 
@@ -164,25 +162,25 @@ ARM指令的基本格式为：`<opcode>{<mode>}{<type>}{<cond>}{S} {Rd{!}} {,...
 
   `CMN...`：cmp not，为按cmp操作完后目标寄存器数据接着按位取反
 
-+ `MOV{cond}{S} Rd,operand2`：将8位的立即数或寄存器内容传给目标寄存器Rd
-
-  `MVN...`：mov not，为按mov操作完后目标寄存器数据接着按位取反
-
-+ `ADD{cond}{S} Rd,Rn,operand2`：将寄存器Rn的数值加上ope2的值传给目标寄存器Rd。
++ `ADD{cond}{S} Rd,Rn,operand2`：将寄存器Rn的数值加上op2的值传给目标寄存器Rd。
 
   `ADC...`：add cflag，为按add操作后再加上CPSR中C位的数值到目标寄存器
 
-+ `SUB{cond}{S} Rd,Rn,operand2`：将寄存器Rn的数值减去ope2的值传给目标寄存器Rd。
++ `SUB{cond}{S} Rd,Rn,operand2`：将寄存器Rn的数值减去op2的值传给目标寄存器Rd。
 
   `SBC...`：sub cflag，按sub操作后再减去CPSR中C位的数值到目标寄存器
 
 + `{S|U}MUL{L|D}{cond}{S} Rd,Rm,Rn`：将寄存器Rm的值与寄存器Rn的值相乘后低32位传给目标寄存器Rd
 
-  `{S|U}MLA...{,Ra}`：mul add ra，按mul操作后再加上Ra寄存器的值的低32位(或自身组成的64位)到目标寄存器
+  `{S|U}MLA{L|D}{cond}{S}...{,Ra}`：mul add，按mul操作后再加上Ra寄存器的值的低32位(或自身组成的64位)到目标寄存器
 
-  `{S|U}MLS...{,Ra}`：mul sub ra，按mul操作后再减去Ra寄存器的值的低32位(或自身组成的64位)到目标寄存器
+  `{S|U}MLS{L|D}{cond}{S}...{,Ra}`：mul sub，按mul操作后再减去Ra寄存器的值的低32位(或自身组成的64位)到目标寄存器
 
 + `{S|U}DIV{cond}{S} Rd,Rm,Rn`：有\无符号除法指令
+
+  `{S|U}DVA{cond}{S}...{,Ra}`：...
+
+  `{S|U}DVS{cond}{S}...{,Ra}`：...
 
 + `AND|ORR|EOR{cond}{S} Rd,Rn,operand2`：逻辑与|或|异或
 
@@ -196,10 +194,18 @@ ARM指令的基本格式为：`<opcode>{<mode>}{<type>}{<cond>}{S} {Rd{!}} {,...
 
 ## 四、语句
 
-学习完具体指令后需要熟悉语句的特点，便于快速整理出伪代码。*关于各种语句的特点，去参考《Android软件安全与逆向分析》第七章第4小节。*
+需要熟悉语句的特点，便于快速整理出伪代码。*关于各种语句的特点，去参考《Android软件安全与逆向分析》第七章第4小节。*
 
 ```mermaid
 graph TB;
+  subgraph ifelse;
+  logici[logic] --> condi[cond];
+  condi[cond] --> if.body;
+  if.body --> morei[more];
+  condi[cond] --> else.body;
+  else.body --> morei[more];
+  end;
+  
   subgraph switch;
   logics[logic] --> conds[cond];
   conds[cond] --> case1.cond+body;
@@ -208,14 +214,6 @@ graph TB;
   case2.cond+body --> mores[more];
   conds[cond] --> case3.cond+body;
   case3.cond+body --> mores[more];
-  end;
-  
-  subgraph ifelse;
-  logici[logic] --> condi[cond];
-  condi[cond] --> if.body;
-  if.body --> morei[more];
-  condi[cond] --> else.body;
-  else.body --> morei[more];
   end;
 ```
 
