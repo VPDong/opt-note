@@ -258,18 +258,18 @@ ARM指令的基本格式为：`<op>[{<type>}{<mode>}{<cond>}{S}] {Rd{!}} {,...}`
 
 寻址指令：
 
-+ `STR{type}{cond} Rd, label`：翻译为store register。将Rd数据存储到label所合成的有效地址
-+ `LDR{type}{cond} Rd, label`：翻译为load register。从label指向的内存中加载数据到Rd中
-+ `STM{mode}{cond} Rn, reglist`：翻译为store multi。将寄存器列表数据写入到指定的存储单元中
-+ `LDM{mode}{cond} Rn, reglist`：翻译为load multi。从指定的存储单元加载多个数据到寄存器列表
++ `STR{type}{cond} Rd, label`：翻译为store from register。将Rd数据存储到label所合成的有效地址
++ `LDR{type}{cond} Rd, label`：翻译为load to register。从label指向的内存中加载数据到Rd中
++ `STM{mode}{cond} Rn, reglist`：翻译为store from multi。将寄存器列表数据写入到指定的存储单元中
++ `LDM{mode}{cond} Rn, reglist`：翻译为load to multi。从指定的存储单元加载多个数据到寄存器列表
 + `PUSH{cond} reglist`：将寄存器列表内容推入满递减栈
 + `POP{cond} reglist`：从满递减栈弹出数据到寄存器列表
 
 运算指令：
 
-+ `CMP{cond} Rn,operand2`：将Rn值减去/加上op2的值，不保存结果，仅根据比较结果设置标志位
++ `CMP{cond} Rn,operand2`：将Rn值减去op2的值，不保存结果，仅根据比较结果设置标志位
 
-  `CMN...`：cmp not，为按cmp操作完后目标寄存器数据接着按位取反
+  `CMN...`：cmp negative，为执行op1- (-op2)操作，即Rn值加上op2的值，仅根据比较结果设置标志位
 
 + `MOV{cond}{S} Rd,operand2`：将操作数传给目标寄存器Rd
 
