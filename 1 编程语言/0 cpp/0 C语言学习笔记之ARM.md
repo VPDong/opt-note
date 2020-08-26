@@ -344,6 +344,7 @@ GNU汇编器声明一个默认标签(或者说标识符)**`_start`** ，它用�
 + **.set symbol,exp**：设置*symbol*的值为*expression*，这个汇编指令和**.equ**以及"="的作用完全一样
 + **.type var,%val**：指定符号类型，也可通过.long等缩减形式
 + **.size var,.label**：用来设定符号的大小,其中的点号代表从当前指令的地址算起
++ **.fill repeat, size, val**：含义是反复拷贝size个字节，重复repeat次。其中size和value是可选的，默认值分别为1和0
 
 可在《*GNU Assembler Manual*》(在 *gnutools/doc* 目录下可找到该文档)中被叫做*Using AS*的部分找到更多关于GNU汇编器的信息，这个200多页的文档虽然界面不算友好，但是内容相当的全面。更详细内容参考[这里](http://blog.chinaunix.net/uid-28458801-id-3477392.html)。
 
