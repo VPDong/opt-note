@@ -13,7 +13,7 @@ ARM处理器则是ARM架构下的微处理器，其广泛的使用在许多嵌�
 
 ### 1.1 寻址空间
 
-CPU最大能查找多大范围的地址叫做寻址能力。CPU的寻址能力以字节为单位(字节是最小可寻址单位)。
+CPU最大能查找多大范围的地址叫做寻址能力，CPU的寻址能力以字节为单位(字节是最小可寻址单位)，在ARM中一个字表示32位(其实字在不同的CPU总线中大小不一样，32位的CPU一个字大小为32位，64位的CPU一个字大小为64位)
 
 > + 内存把8bit排成一组，每一组为一个单位(字节)，CPU每次只能访问去访问一个字节，而不能去访问每一个比特。计算机系统会给内存中的每一个字节分配一个内存地址，CPU只要知道某个数据类型的地址，就可以到地址所指向的内存去读取数据。
 >
@@ -313,28 +313,54 @@ ARM指令的基本格式为：`<op>[{<type>}{<mode>}{<cond>}{S}] {Rd{!}} {reglis
 
 
 
-### 五、扩展内容
+### 五、汇编编程
 
-### 5.1 文件格式
+### 5.1 汇编语法
+
+GNU汇编器是GNU工具套件之一，其作用是把ARM汇编源代码转换成二进制对象文件。同时GNU汇编器支持多种架构的CPU而不仅仅是ARM，GNU汇编器对于其支持的45种CPU架构采用相同的汇编语法，因此它的汇编语法和其他的ARM汇编器有细微的区别。
+
+> 当编写完汇编代码后，可用GNU汇编器进行汇编来生成二进制目标文件，使用方式为`arm-elf-as -marm7tdmi --gdwarf2 -o filename.o filename.s`，其中**-marm7tdmi**是CPU的类型为ARM7TDMI， **--gdwarf2**是让汇编器附带输出DEBUG信息。
+>
+> 当把汇编文件编译成二进制目标文件(后缀名.*o*)后，可用GNU链接器生成最终的可执行文件(后缀.*elf*)，使用方式为`arm-elf-ld -o filename.elf filename.o`
+
+**GNU汇编器使用`.section`命令语句声明段。.section语句只使用一个参数------它声明的段的类型**。汇编程序由定义好的段构成，每个段都有不同的目的，三个最常用的段：
+
++ **bss段**：汇编程序bss段是可选的。bss段声明**带有零(或NULL)值初始化**的数据元素。这些元素最常用作汇编程序中的**缓冲区**
++ **data段**：汇编程序data(数据)段是可选的。数据段声明**带有初始值**的数据元素，这些数据元素最常用作汇编程序的**变量**
++ **text段**：汇编程序必须有text(文本)段。这个段是在可执行程序内声明指令码的地方
+
+GNU汇编器声明一个默认标签(或者说标识符)**`_start`** ，它用作应用程序的入口点，用于表明程序应该从这条指令开始运行。
+
+汇编源文件由声明(每行一个)组成，声明的每个部分都是可选的，声明格式为` label: instruction ; comment`，label可以确定其所在位置的程序计数器(pc)值，注释既可以以**;**或**@**开始。
+
+所有的汇编命令都是以"."开头。这些命令在*GNU Assembler Reference*的第七章做了更加详细的介绍。下面所列出的这些命令是在程序中最常用的：
+
++ **.include "filename"**：在当前文件中插入*filename*的内容。这和C的#include是同样效果，故通过它也可包含定义变量的头文件
++ **.extern symbol**：声明*symbol*的定义在其他源文件中
++ **.global symbol**：声明*symbol*是全局可见的*。*标号**_start**是GNU链接器用来指定第一个要执行指令所必须的，同样的是全局可见的，并且只能出现在一个模块中
++ **.align**：自动插入0到3个字节的0x00，这样下一个位置将是4字节的整数倍。如后面带数字，则表示数值为2的次数方
++ **.byte exp**：在对象文件中插入一个字节，内容为*expression*的值。类似的还有**2byte**、**.hword**、**4byte**、**.word**
++ **.ascii "str"** ：在对象文件中按照指定的方法插入字符串。而**.asciz**和**.ascii**相似，只是插入的字符串后在以NUL(0x00)结尾
++ **.set symbol,exp**：设置*symbol*的值为*expression*，这个汇编指令和**.equ**以及"="的作用完全一样
++ **.type var,%val**：指定符号类型，也可通过.long等缩减形式
++ **.size var,.label**：用来设定符号的大小,其中的点号代表从当前指令的地址算起
+
+可在《*GNU Assembler Manual*》(在 *gnutools/doc* 目录下可找到该文档)中被叫做*Using AS*的部分找到更多关于GNU汇编器的信息，这个200多页的文档虽然界面不算友好，但是内容相当的全面。更详细内容参考[这里](http://blog.chinaunix.net/uid-28458801-id-3477392.html)。
 
 ```
-ARM汇编中基本结构如下：
-.section .rodata
-  .align 2
-  .arch armv7-a              @处理器架构
-  .fpu softvfp               @协处理器类型
-  .eabi_attribute 30,6       @接口属性
-  .file "hello.c"            @源文件名称
-.label:
-  .section [val]             @段定义，有时也会省略.section直接定义
-  .align [val]               @对齐方式，数值为2的次数方
-  .global [val]              @声明全局符号,一般是函数名称。还有.ascii用于声明字符串
-  .type [gvar],%[val]        @指定符号类型，也可通过.long等缩减形式
-  .size [gvar], .label(点号代表从当前指令的地址算起)
+// ARM汇编程序的基本模板如下：
+.section .bss
+  < initialized data here>
+.section .data
+  < initialized data here >
+.section .text
+  .global _start
+_start:
+  <instruction code="" goes="" here=""/>
 ```
 
 ```
-具体例子如下：
+// ARM汇编程序的反编译的具体例子如下：
 .section .rodata
   .align 2
   .arch armv7-a
