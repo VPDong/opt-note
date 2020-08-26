@@ -192,7 +192,7 @@ R15(PC)总是指向“正在取指”的指令，而不是指向“正在执行�
 
 ### 4.2 指令内容
 
-ARM指令的基本格式为：`<op>[{<type>}{<mode>}{<cond>}{S}] {Rd{!}} {,...}`
+ARM指令的基本格式为：`<op>[{<type>}{<mode>}{<cond>}{S}] {Rd{!}} {reglist}`
 
 + op为指令助记符，如MOV等，这也是理解记忆的重点
 
@@ -215,6 +215,8 @@ ARM指令的基本格式为：`<op>[{<type>}{<mode>}{<cond>}{S}] {Rd{!}} {,...}`
   > + `<op> Rd, [Rbase], Rindex`：源地址为Rbase所包含的有效地址，并且把Rbase + Rindexd的地址写回Rbase
 
 + **上尖号^结尾，用于在重新装载R15的时候恢复PSR位**
+
++ **reglist中序号低的寄存器对应于存储器的低地址，不考虑{...}中的次序**，举例如`STMDA R0!,{R1,R2, R3,R14}`
 
 ```txt
 // 常见的type
@@ -255,6 +257,10 @@ ARM指令的基本格式为：`<op>[{<type>}{<mode>}{<cond>}{S}] {Rd{!}} {,...}`
   1110    AL            忽略                  无条件执行
   1111    NV            忽略
 ```
+
+指令格式和解析如下图：
+
+![](http://blog.chinaunix.net/attachment/201307/8/28458801_137325886181M8.png)
 
 寻址指令：
 
@@ -400,4 +406,10 @@ graph TB;
   wd.cond+body --> morew[more];
   end;
 ```
+
+
+
+---
+
+参考资料：http://blog.chinaunix.net/uid/28458801/cid-171254-list-2.html
 
