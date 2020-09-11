@@ -100,6 +100,10 @@ Hashcat中的密码破译，其实是通过碰撞比较，匹配出相应的明�
 
 + --remove ：把密文文件中已经破译的密码筛除，仅留下不能破译的密码
 
++ -D：opencl-device-types，即主要用于选定1(CPU)、2(GPU)、3(FPGA, DSP, Co-Processor)
+
++ -O：optimized-kernel-enable，即主要用于优化内核，在mac系统上使用时需要输入该参数
+
 + -o：指定破解成功后的hash及所对应的明文密码的存放位置，可用它把破解成功的hash写到指定的文件中
 
   > 通过--potfile-disable命令进行设置可防止如下的问题：正常情况下，-o命令会把匹配出的密码输出到outfile文件。但是在实验过程中出现了一个问题，即没有在路径下生成outfile文件。这是因为hashcat在破译密码的过程中，会把破译的结果(有本次破译出的密码和对应的结果)缓存到hashcat.potfile文件，当下次破译遇到同样的密码表，会从potfile文件中直接获取。
