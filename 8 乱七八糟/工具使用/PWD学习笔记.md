@@ -140,5 +140,48 @@ Hashcat中的密码破译，其实是通过碰撞比较，匹配出相应的明�
 
 ## 三、hydra
 
-未完待续...
+hydra是著名黑客组织thc的一款开源的暴力密码破解工具，可以在线破解多种密码，是一个支持众多协议的爆破工具。
+
+格式为：`hydra [options] <IP> <service> [path] `
+
+### 常用参数
+
++ -C：当用户名和密码存储到一个文件时使用。注意文件(字典)存储的格式必须为 "用户名:密码" 的格式
+
++ -l：指定单个登录名，适合在知道用户名爆破用户名密码时使用
+
++ -L：指定多个登录名，参数值为存储用户名的文件的绝对路径
+
++ -p：指定单个登录密码，适合在知道密码爆破用户名时使用
+
++ -P：指定多个登录密码，参数值为存贮登录密码的文件的绝对路径
+
++ -m：为一个模块指定OPT选项
+
++ -M：指定多个攻击目标，此参数为存储攻击目标的文件的绝对路径。注意列表文件存储格式必须为 "地址:端口"
+
++ -s：指定端口，适用于攻击目标端口非默认的情况。如http服务使用非80端口
+
++ -S：指定爆破时使用SSL链接
+
++ -U：查看某服务是否需要额外的参数，如查看ssh模块`hydra -U ssh`，又如http(get)`hydra -U http-get`
+
++ -t：指定爆破时的任务数量(可以理解为线程数)，默认为16
+
+  > 在爆破过程中，要适当的使用爆破的线程数。比如ssh一般有连接数量的苛刻限制，连接数量不得超过4。如果使用hydra默认的线程数，有些线程会连接失败，从而导致字典中有正确密码而无法爆破现象。
+
++ -f：一但爆破成功一个就停止爆破
+
++ -o：将爆破的登录名/密码写到文件，而不是在终端显示
+
+下面是举例说明：
+
+```shell
+# get方式提交，破解web登录
+hydra -l 用户名 -p 密码字典 -t 线程 -f ip http-get /admin/login.php
+
+# post方式提交，破解web登录。这里要注意后面path中指定了post内容的key
+hydra -l 用户名 -P 密码字典 -t 线程 -f ip http-post-form "/admin/login.php:username=^USER^&password=^PASS^&submit=login:sorry password" # sorry是表示错误猜解的返回信息提示
+hydra -l 用户名 -P 密码字典 -t 线程 -f ip http-post-form "/admin/login.php:id=^USER^&passwd=^PASS^:<title>wrong username or password</title>" # <title>是表示错误猜解的返回信息提示
+```
 
