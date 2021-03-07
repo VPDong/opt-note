@@ -1,6 +1,6 @@
 # JVM综述
 
-![](https://cdn.jsdelivr.net/gh/vpdong/opt-imgs@master/data/20210307154101-JVM%E8%99%9A%E6%8B%9F%E6%9C%BA.png)
+![](https://cdn.jsdelivr.net/gh/vpdong/opt-imgs@master/data/20210307192851-JVM%E8%99%9A%E6%8B%9F%E6%9C%BA.png)
 
 一个JVM实例，对应着多个后台线程，这些线程不包括调用main方法的main线程和创建main线程的线程，主要包括如下：
 
