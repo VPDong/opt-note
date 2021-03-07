@@ -1,6 +1,6 @@
 # JVM类加载子系统
 
-![](https://cdn.jsdelivr.net/gh/vpdong/opt-imgs@master/data/20210306185753-JVM%E8%99%9A%E6%8B%9F%E6%9C%BA.svg)
+![](https://cdn.jsdelivr.net/gh/vpdong/opt-imgs@master/data/20210307154101-JVM%E8%99%9A%E6%8B%9F%E6%9C%BA.png)
 
 通过一个类的**全限定名获取此类的二进制流**，将静态**存储结构**(见class文件结构)存储为运行时数据区中方法区的**数据结构**(在方法区对应的内存中生成一个代表这个类的java.lang.Class对象，作为方法区这个类的各种数据的访问入口)
 
